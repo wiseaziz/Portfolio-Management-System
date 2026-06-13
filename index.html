@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>نظام إدارة المحافظ الثلاث</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c111e; --panel:#111827; --panel2:#0e1422;
+  --line:#1d2740; --line2:#28344f;
+  --gold:#c9a85c; --gold2:#e8cf96;
+  --txt:#dfe4ee; --mut:#7e89a3; --dim:#56617a;
+  --grn:#2fbf8f; --red:#e5586a; --amb:#d9a441; --blu:#5b8def;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:15px}
+body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto;padding:0 14px 40px}
+
+/* ===== Top bar ===== */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 0 10px;border-bottom:1px solid var(--line)}
+.top h1{font-size:15px;font-weight:600}
+.top h1 b{color:var(--gold2);font-weight:700}
+.top .sub{font-size:11px;color:var(--mut);margin-top:1px}
+.tools{display:flex;gap:6px;align-items:center}
+.ic{background:var(--panel);border:1px solid var(--line);color:var(--mut);width:32px;height:32px;
+  border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.ic:hover{border-color:var(--gold);color:var(--gold2)}
+.conn{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:0 10px;height:32px;font-size:11.5px;color:var(--mut);cursor:pointer;white-space:nowrap}
+.conn:hover{border-color:var(--gold)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex:none}
+.dot.ok{background:var(--grn);box-shadow:0 0 6px rgba(47,191,143,.7)}
+.dot.busy{background:var(--amb)}
+.dot.err{background:var(--red)}
+
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:2px;margin:12px 0;background:var(--panel2);border:1px solid var(--line);
+  border-radius:9px;padding:3px;width:fit-content;max-width:100%;overflow-x:auto}
+.tabs button{background:none;border:none;color:var(--mut);font-family:inherit;font-size:12.5px;
+  padding:7px 15px;border-radius:7px;cursor:pointer;white-space:nowrap;transition:.15s}
+.tabs button.on{background:var(--panel);color:var(--gold2);border:1px solid var(--line2)}
+
+/* ===== Stat strip ===== */
+.strip{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel2);margin-bottom:12px;overflow:hidden}
+.st{flex:1;min-width:116px;padding:9px 14px;border-left:1px solid var(--line)}
+.st:last-child{border-left:none}
+.st .l{font-size:10px;color:var(--mut);margin-bottom:3px}
+.st .v{font-size:16px;font-weight:600;direction:ltr;text-align:right}
+.st .v small{font-size:10px;color:var(--mut);font-weight:400}
+.up{color:var(--grn)}.dn{color:var(--red)}.gold{color:var(--gold2)}.amb{color:var(--amb)}
+
+/* ===== Panels ===== */
+.panel{background:var(--panel2);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 14px;
+  border-bottom:1px solid var(--line);font-size:12.5px;color:var(--gold2);font-weight:600}
+.phead small{color:var(--mut);font-weight:400;font-size:10.5px}
+.pbody{padding:12px 14px}
+
+/* ===== Config row ===== */
+.cfg{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.cfg .f{padding:8px 14px;border-left:1px solid var(--line);min-width:128px;flex:1}
+.cfg .f:last-child{border-left:none}
+.cfg label{display:block;font-size:10px;color:var(--mut);margin-bottom:2px}
+.cfg input{width:100%;background:none;border:none;color:var(--gold2);font-family:inherit;
+  font-size:15px;font-weight:600;outline:none;direction:ltr;text-align:right}
+.cfg .ro{color:var(--txt);font-size:15px;font-weight:600;direction:ltr;text-align:right}
+
+/* ===== Grid table ===== */
+.gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:980px}
+th{background:var(--panel);color:var(--mut);font-weight:500;font-size:10.5px;text-align:center;
+  padding:7px 5px;border-bottom:1px solid var(--line2);border-left:1px solid var(--line);white-space:nowrap}
+td{padding:0;border-bottom:1px solid var(--line);border-left:1px solid var(--line);text-align:center;height:33px}
+td.num{direction:ltr}
+tr:hover td{background:rgba(201,168,92,.03)}
+td input[type=number],td input[type=text]{width:100%;height:33px;background:none;border:none;color:var(--txt);
+  font-family:inherit;font-size:12.5px;text-align:center;outline:none;direction:ltr}
+td input.sym{direction:rtl;font-weight:600;color:var(--gold2)}
+td input:focus{background:rgba(201,168,92,.08)}
+td .calc{font-size:12px;padding:0 5px;white-space:nowrap}
+.idx{color:var(--dim);font-size:10.5px;width:28px}
+.rr-bad{color:var(--red);font-weight:700}
+.rr-mid{color:var(--amb);font-weight:600}
+.rr-ok{color:var(--grn);font-weight:600}
+.del{color:var(--dim);cursor:pointer;font-size:13px;border:none;background:none;width:26px}
+.del:hover{color:var(--red)}
+tr.tot td{background:var(--panel);font-weight:700;font-size:12px;height:36px;border-top:1px solid var(--line2)}
+.tag{font-size:10px;padding:2px 8px;border-radius:6px}
+.tag.open{background:rgba(91,141,239,.12);color:var(--blu)}
+.tag.win{background:rgba(47,191,143,.12);color:var(--grn)}
+.tag.lose{background:rgba(229,88,106,.12);color:var(--red)}
+.warn{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:4px 10px;border-radius:7px;margin:4px 4px 0 0}
+.warn.r{background:rgba(229,88,106,.1);color:var(--red);border:1px solid rgba(229,88,106,.25)}
+.warn.a{background:rgba(217,164,65,.1);color:var(--amb);border:1px solid rgba(217,164,65,.25)}
+.warn.g{background:rgba(47,191,143,.08);color:var(--grn);border:1px solid rgba(47,191,143,.2)}
+
+/* ===== Dashboard ===== */
+.dash-grid{display:grid;gap:12px}
+@media(min-width:900px){.dash-grid{grid-template-columns:2.1fr 1fr}}
+.mtbl{min-width:0}
+.mtbl td{height:auto;padding:9px 10px;font-size:12.5px}
+.mtbl td:first-child{text-align:right;font-weight:600}
+.mini{font-size:10.5px;color:var(--mut);font-weight:400}
+.alloc-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:4px 0 10px;background:var(--line)}
+.alloc-bar i{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--mut)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-left:5px}
+.rules{font-size:11.5px;color:var(--mut);line-height:2}
+.rules b{color:var(--txt)}
+.fx{min-width:0}
+.fx td{height:auto;padding:8px 10px;font-size:12px}
+
+/* ===== Investors ===== */
+.invtbl{min-width:620px}
+.alert{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:9px;font-size:12.5px;margin-bottom:12px}
+.alert.a{background:rgba(217,164,65,.08);border:1px solid rgba(217,164,65,.3);color:var(--amb)}
+.alert.g{background:rgba(47,191,143,.07);border:1px solid rgba(47,191,143,.25);color:var(--grn)}
+.alert b{font-size:14px}
+input.chk{width:16px;height:16px;accent-color:var(--grn);cursor:pointer}
+
+/* ===== Modal ===== */
+.modal{position:fixed;inset:0;background:rgba(5,8,16,.75);backdrop-filter:blur(5px);display:none;z-index:50;overflow-y:auto;padding:24px 14px}
+.modal.show{display:block}
+.mbox{max-width:560px;margin:0 auto;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:18px}
+.mbox h2{font-size:14.5px;color:var(--gold2);margin-bottom:12px}
+.mbox label{display:block;font-size:11px;color:var(--mut);margin:10px 0 4px}
+.mbox input{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--txt);border-radius:8px;
+  padding:9px 11px;font-family:inherit;font-size:13px;outline:none;direction:ltr;text-align:left}
+.mbox input:focus{border-color:var(--gold)}
+.btn{background:var(--gold);color:#17120a;border:none;border-radius:8px;padding:9px 16px;
+  font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
+.btn.ghost{background:var(--panel);color:var(--txt);border:1px solid var(--line2)}
+.btnrow{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+.steps{font-size:11.5px;color:var(--mut);line-height:1.9;background:var(--bg);border:1px solid var(--line);
+  border-radius:8px;padding:10px 12px;margin-top:12px}
+.steps b{color:var(--gold2)}
+.steps code{background:var(--line);padding:1px 5px;border-radius:4px;font-size:10.5px;direction:ltr;display:inline-block}
+.syncline{font-size:11px;color:var(--mut);margin-top:8px}
+.privacy .pv{filter:blur(7px)}
+.addrow{background:none;border:1px dashed var(--line2);color:var(--mut);width:calc(100% - 28px);
+  margin:10px 14px;padding:7px;border-radius:8px;font-family:inherit;font-size:11.5px;cursor:pointer}
+.addrow:hover{color:var(--gold2);border-color:var(--gold)}
+section{display:none}section.on{display:block}
+@media(max-width:700px){html{font-size:14px}.st{min-width:100px}.st .v{font-size:14px}.conn span:last-child{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="top">
+  <div>
+    <h1>نظام إدارة <b>المحافظ الثلاث</b></h1>
+    <div class="sub">تحجيم الصفقات وإدارة المخاطر — Van Tharp Fixed Fractional</div>
+  </div>
+  <div class="tools">
+    <div class="conn" onclick="openModal('mConn')" title="ربط Google Sheets">
+      <span class="dot" id="connDot"></span><span id="connLbl">حفظ الاتصال</span>
+    </div>
+    <button class="ic" onclick="openModal('mFx')" title="الإعدادات">⚙</button>
+    <button class="ic" onclick="document.body.classList.toggle('privacy')" title="إخفاء الأرقام">👁</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="on" onclick="go('dash',this)">لوحة التحكم</button>
+  <button onclick="go('sau',this)">🇸🇦 السعودي</button>
+  <button onclick="go('egy',this)">🇪🇬 المصري</button>
+  <button onclick="go('usa',this)">🇺🇸 الأمريكي</button>
+  <button onclick="go('inv',this)">المستثمرون</button>
+</div>
+
+<!-- ============ DASHBOARD (قراءة فقط) ============ -->
+<section class="on" id="pg-dash">
+  <div class="strip" id="dashStrip"></div>
+  <div class="dash-grid">
+    <div>
+      <div class="panel">
+        <div class="phead">توزيع رأس المال على الأسواق <small>بعملة كل سوق + المكافئ بالريال</small></div>
+        <div class="gridwrap"><table class="mtbl" id="dashTbl"></table></div>
+        <div class="pbody" style="padding-top:8px">
+          <div class="alloc-bar" id="allocBar"></div>
+          <div class="legend" id="allocLegend"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="phead">حالة المخاطر لكل سوق</div>
+        <div class="pbody" id="dashWarns" style="padding-top:8px"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="phead">أسعار الصرف</div>
+        <div class="gridwrap"><table class="fx" id="fxTbl"></table></div>
+      </div>
+      <div class="panel">
+        <div class="phead">التطهير <small>تلقائي — ٥٪ من الأرباح فقط</small></div>
+        <div class="pbody" id="dashPurif" style="padding-top:10px"></div>
+      </div>
+      <div class="panel">
+        <div class="phead">قواعد النظام المعتمدة</div>
+        <div class="pbody rules">
+          <b>١.</b> المخاطرة الثابتة: 1–2% من رأس المال للصفقة الواحدة.<br>
+          <b>٢.</b> حجم الصفقة = مبلغ المخاطرة ÷ نسبة وقف الخسارة.<br>
+          <b>٣.</b> R/R لا يقل عن 2:1 — يظهر بالأحمر دون ذلك.<br>
+          <b>٤.</b> الحد الأقصى للصفقة الواحدة 20% من رأس المال.<br>
+          <b>٥.</b> إجمالي مخاطرة الصفقات النشطة ≤ 6%.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MARKETS ============ -->
+<section id="pg-sau"></section>
+<section id="pg-egy"></section>
+<section id="pg-usa"></section>
+
+<!-- ============ INVESTORS ============ -->
+<section id="pg-inv"></section>
+
+</div>
+
+<!-- ============ CONNECTION MODAL ============ -->
+<div class="modal" id="mConn">
+  <div class="mbox">
+    <h2>🔗 ربط Google Sheets</h2>
+    <label>رابط تطبيق Apps Script (Web App URL)</label>
+    <input id="gsUrl" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="syncline" id="syncInfo">غير متصل — البيانات محفوظة محلياً على هذا الجهاز فقط.</div>
+    <div class="btnrow" style="justify-content:flex-start">
+      <button class="btn" onclick="saveConn()">حفظ الاتصال واختباره</button>
+      <button class="btn ghost" onclick="pull(true)">سحب من الشيت</button>
+      <button class="btn ghost" onclick="push(true)">رفع للشيت</button>
+    </div>
+    <div class="steps">
+      <b>الإعداد (مرة واحدة):</b><br>
+      ١. Google Sheet جديد → Extensions → <b>Apps Script</b>.<br>
+      ٢. الصق محتوى <code>Code.gs</code> المرفق واحفظ.<br>
+      ٣. Deploy → New deployment → <b>Web app</b>.<br>
+      ٤. Execute as: <b>Me</b> · Who has access: <b>Anyone</b>.<br>
+      ٥. انسخ رابط <code>/exec</code> والصقه أعلاه.<br>
+      بعد الربط: كل تعديل يُحفظ تلقائياً، وارفع <code>index.html</code> على GitHub Pages وشارك الرابط — الجميع يشاهد ويعدّل نفس البيانات.
+    </div>
+    <div class="btnrow"><button class="btn ghost" onclick="closeModal('mConn')">إغلاق</button></div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div class="modal" id="mFx">
+  <div class="mbox">
+    <h2>⚙ الإعدادات</h2>
+    <label>1 دولار أمريكي = ؟ ريال سعودي</label>
+    <input type="number" step="any" id="fxUsd">
+    <label>1 ريال سعودي = ؟ جنيه مصري</label>
+    <input type="number" step="any" id="fxEgp">
+    <label>نسبة التطهير من الأرباح %</label>
+    <input type="number" step="any" id="purPct">
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeModal('mFx')">إلغاء</button>
+      <button class="btn" onclick="saveFx()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.onerror=function(msg,src,line){
+  let b=document.getElementById('errbar');
+  if(!b){b=document.createElement('div');b.id='errbar';
+    b.style.cssText='position:fixed;top:0;right:0;left:0;z-index:999;background:#7a1f2b;color:#ffd9dd;font:12px IBM Plex Sans Arabic,sans-serif;padding:8px 14px;direction:ltr;text-align:left';
+    document.body.appendChild(b);}
+  b.textContent='JS Error: '+msg+' (line '+line+')';
+};
+/* ================== STATE ================== */
+const MK={
+  sau:{flag:'🇸🇦',name:'السوق السعودي (تداول)',cur:'ر.س',toSAR:v=>v},
+  egy:{flag:'🇪🇬',name:'السوق المصري (EGX)',cur:'ج.م',toSAR:v=>v/S.fx.egp},
+  usa:{flag:'🇺🇸',name:'السوق الأمريكي (NYSE/NASDAQ)',cur:'$',toSAR:v=>v*S.fx.usd}
+};
+const DEF={fx:{usd:3.75,egp:13.3435},pur:5,gsUrl:'',inv:[],
+  m:{sau:{cap:0,risk:1,maxPos:20,rows:[]},egy:{cap:0,risk:1,maxPos:20,rows:[]},usa:{cap:0,risk:1,maxPos:20,rows:[]}}};
+let S;const LSK='noted_sizing_v3';
+try{S=Object.assign(structuredClone(DEF),JSON.parse(localStorage.getItem(LSK)||'{}'));}catch(e){S=structuredClone(DEF);}
+if(!S.inv)S.inv=[];if(!S.pur)S.pur=5;
+const $=id=>document.getElementById(id);
+const fm=(n,d)=>(n===undefined||n===null||isNaN(n)||!isFinite(n))?'—':
+  new Intl.NumberFormat('en-US',{maximumFractionDigits:d??(Math.abs(n)>=1000?0:2)}).format(n);
+const pc=(n,d=1)=>isFinite(n)?fm(n,d)+'%':'—';
+function persist(){try{localStorage.setItem(LSK,JSON.stringify(S));}catch(e){} schedulePush();}
+
+/* ================== CALC ================== */
+function rowCalc(m,r){
+  const M=S.m[m];
+  if(!(r.buy>0&&r.tgt>0&&r.stop>0&&r.stop<r.buy)) return null;
+  const tgtPct=(r.tgt-r.buy)/r.buy*100;
+  const stopPct=(r.stop-r.buy)/r.buy*100;
+  const rr=(r.tgt-r.buy)/(r.buy-r.stop);
+  const riskAmt=M.cap*M.risk/100;
+  let size=riskAmt/(-stopPct/100);
+  size=Math.min(size,M.cap*M.maxPos/100);
+  const sh=Math.floor(size/r.buy);
+  const closed=r.exit>0;
+  return {tgtPct,stopPct,rr,size:sh*r.buy,sh,profit:sh*(r.tgt-r.buy),loss:sh*(r.stop-r.buy),
+    closed,result:closed?sh*(r.exit-r.buy):null};
+}
+function mTotals(m){
+  const M=S.m[m];let used=0,profit=0,loss=0,n=0,realized=0,nc=0;
+  M.rows.forEach(r=>{const c=rowCalc(m,r);if(!c)return;
+    if(c.closed){realized+=c.result;nc++;}
+    else{used+=c.size;profit+=c.profit;loss+=c.loss;n++;}});
+  return {used,profit,loss,n,nc,realized,cap:M.cap,liq:M.cap-used,
+    usedPct:M.cap?used/M.cap*100:0,profitPct:M.cap?profit/M.cap*100:0,lossPct:M.cap?loss/M.cap*100:0};
+}
+function winTrades(){ // الصفقات المغلقة الرابحة (للتطهير) عبر كل الأسواق
+  const out=[];
+  for(const m in MK)S.m[m].rows.forEach((r,i)=>{const c=rowCalc(m,r);
+    if(c&&c.closed&&c.result>0)out.push({m,i,r,c,sar:MK[m].toSAR(c.result),pur:MK[m].toSAR(c.result)*S.pur/100});});
+  return out;
+}
+function realizedSAR(){let s=0;for(const m in MK)s+=MK[m].toSAR(mTotals(m).realized);return s;}
+function totalCapSAR(){let s=0;for(const m in MK)s+=MK[m].toSAR(S.m[m].cap);return s;}
+
+/* ================== MARKET PAGES ================== */
+function ensureTail(m){
+  const rows=S.m[m].rows;
+  const empty=r=>!r.sym&&!r.buy&&!r.tgt&&!r.stop&&!r.exit;
+  while(rows.length>1&&empty(rows[rows.length-1])&&empty(rows[rows.length-2]))rows.pop();
+  if(!rows.length||!empty(rows[rows.length-1]))rows.push({sym:'',buy:'',tgt:'',stop:'',exit:''});
+}
+function buildMarket(m){
+  ensureTail(m);const M=S.m[m],K=MK[m];
+  const xs=m!=='sau';
+  $('pg-'+m).innerHTML=`<div class="strip" id="strip-${m}"></div>
+  <div class="panel">
+    <div class="cfg">
+      <div class="f"><label>رأس مال السوق (${K.cur})</label>
+        <input type="number" step="any" value="${M.cap||''}" onchange="setCfg('${m}','cap',this.value)"></div>
+      <div class="f"><label>المخاطرة لكل صفقة %</label>
+        <input type="number" step="any" value="${M.risk}" onchange="setCfg('${m}','risk',this.value)"></div>
+      <div class="f"><label>الحد الأقصى للصفقة %</label>
+        <input type="number" step="any" value="${M.maxPos}" onchange="setCfg('${m}','maxPos',this.value)"></div>
+      <div class="f"><label>مبلغ المخاطرة / صفقة</label><div class="ro gold" id="riskamt-${m}"></div></div>
+    </div>
+    <div class="gridwrap"><table id="tbl-${m}">
+      <thead><tr><th class="idx">#</th><th style="min-width:110px">الرمز</th>
+      <th>الشراء</th><th>الهدف</th><th>الوقف</th><th>الخروج</th>
+      <th>% الهدف</th><th>% الوقف</th><th>R/R</th><th>حجم الصفقة</th>${xs?'<th>بالريال</th>':''}
+      <th>الأسهم</th><th>الربح المتوقع</th><th>الخسارة المحتملة</th><th>النتيجة</th><th></th></tr></thead>
+      <tbody>${M.rows.map((r,i)=>rowHTML(m,i,r,xs)).join('')}</tbody>
+      <tfoot>${totHTML(m,xs)}</tfoot>
+    </table></div>
+    <button class="addrow" onclick="addRow('${m}')">＋ إضافة صف</button>
+    <div class="pbody" id="warns-${m}" style="padding-top:0"></div>
+  </div>`;
+  M.rows.forEach((_,i)=>patchRow(m,i));
+  patchSummary(m);
+}
+function rowHTML(m,i,r,xs){
+  return `<tr id="r-${m}-${i}">
+    <td class="idx">${i+1}</td>
+    <td><input type="text" class="sym" value="${r.sym||''}" placeholder="—" oninput="setCell('${m}',${i},'sym',this.value)"></td>
+    <td><input type="number" step="any" value="${r.buy||''}" oninput="setCell('${m}',${i},'buy',this.value)"></td>
+    <td><input type="number" step="any" value="${r.tgt||''}" oninput="setCell('${m}',${i},'tgt',this.value)"></td>
+    <td><input type="number" step="any" value="${r.stop||''}" oninput="setCell('${m}',${i},'stop',this.value)"></td>
+    <td><input type="number" step="any" value="${r.exit||''}" placeholder="·" oninput="setCell('${m}',${i},'exit',this.value)"></td>
+    <td class="num"><span class="calc" data-c="tgtPct"></span></td>
+    <td class="num"><span class="calc" data-c="stopPct"></span></td>
+    <td class="num"><span class="calc" data-c="rr"></span></td>
+    <td class="num"><span class="calc pv" data-c="size"></span></td>
+    ${xs?'<td class="num"><span class="calc pv" data-c="sar"></span></td>':''}
+    <td class="num"><span class="calc" data-c="sh"></span></td>
+    <td class="num"><span class="calc pv" data-c="profit"></span></td>
+    <td class="num"><span class="calc pv" data-c="loss"></span></td>
+    <td><span class="calc pv" data-c="res"></span></td>
+    <td><button class="del" onclick="delRow('${m}',${i})">✕</button></td></tr>`;
+}
+function totHTML(m,xs){
+  return `<tr class="tot"><td colspan="9" style="text-align:left;padding-left:10px">إجماليات الصفقات النشطة</td>
+    <td class="num pv" id="t-size-${m}"></td>${xs?`<td class="num pv" id="t-sar-${m}"></td>`:''}
+    <td></td><td class="num pv up" id="t-profit-${m}"></td><td class="num pv dn" id="t-loss-${m}"></td>
+    <td class="num pv" id="t-res-${m}"></td><td></td></tr>`;
+}
+function patchRow(m,i){
+  const tr=$(`r-${m}-${i}`);if(!tr)return;
+  const c=rowCalc(m,S.m[m].rows[i]);
+  const set=(k,html,cls)=>{const el=tr.querySelector(`[data-c="${k}"]`);if(!el)return;
+    el.innerHTML=html;el.className='calc '+(k.match(/size|sar|profit|loss|res/)?'pv ':'')+(cls||'');};
+  if(!c){['tgtPct','stopPct','rr','size','sar','sh','profit','loss','res'].forEach(k=>set(k,'<span style="color:var(--dim)">—</span>'));return;}
+  set('tgtPct',pc(c.tgtPct),'up');
+  set('stopPct',pc(c.stopPct),'dn');
+  set('rr',fm(c.rr,2),c.rr<1?'rr-bad':c.rr<2?'rr-mid':'rr-ok');
+  set('size',fm(c.size,0));
+  if(m!=='sau')set('sar',fm(MK[m].toSAR(c.size),0));
+  set('sh',fm(c.sh,0));
+  set('profit',fm(c.profit,0),'up');
+  set('loss',fm(c.loss,0),'dn');
+  set('res',c.closed?`<b class="${c.result>=0?'up':'dn'}">${fm(c.result,0)}</b>`:'<span class="tag open">نشطة</span>');
+}
+function patchSummary(m){
+  const t=mTotals(m),M=S.m[m],K=MK[m];
+  $('riskamt-'+m).textContent=fm(M.cap*M.risk/100,0)+' '+K.cur;
+  const sEl=$('t-size-'+m);if(sEl){sEl.textContent=fm(t.used,0);
+    $('t-profit-'+m).textContent=fm(t.profit,0);
+    $('t-loss-'+m).textContent=fm(t.loss,0);
+    const rEl=$('t-res-'+m);rEl.textContent=t.nc?fm(t.realized,0):'';rEl.className='num pv '+(t.realized>=0?'up':'dn');
+    if(m!=='sau')$('t-sar-'+m).textContent=fm(K.toSAR(t.used),0);}
+  $('strip-'+m).innerHTML=`
+    <div class="st"><div class="l">رأس المال</div><div class="v gold pv">${fm(M.cap,0)} <small>${K.cur}</small></div></div>
+    <div class="st"><div class="l">المستخدم (النشطة)</div><div class="v pv ${t.usedPct>100?'dn':''}">${fm(t.used,0)} <small>${pc(t.usedPct,0)}</small></div></div>
+    <div class="st"><div class="l">السيولة المتاحة</div><div class="v pv ${t.liq<0?'dn':''}">${fm(t.liq,0)}</div></div>
+    <div class="st"><div class="l">نشطة / مغلقة</div><div class="v">${t.n} <small>/ ${t.nc}</small></div></div>
+    <div class="st"><div class="l">الربح المتوقع</div><div class="v up pv">${fm(t.profit,0)} <small>${pc(t.profitPct)}</small></div></div>
+    <div class="st"><div class="l">الخسارة القصوى</div><div class="v dn pv">${fm(t.loss,0)} <small>${pc(t.lossPct)}</small></div></div>
+    <div class="st"><div class="l">النتيجة المحققة</div><div class="v pv ${t.realized>=0?'up':'dn'}">${fm(t.realized,0)}</div></div>`;
+  const w=[];
+  if(t.used>t.cap&&t.cap)w.push(['r','⛔ تجاوز رأس المال — حجم الصفقات النشطة أكبر من السيولة']);
+  const riskPct=Math.abs(t.lossPct);
+  if(riskPct>6)w.push(['r','⛔ مخاطرة المحفظة '+fm(riskPct,1)+'% — تتجاوز حد 6%']);
+  else if(riskPct>4.5)w.push(['a','⚠ مخاطرة المحفظة '+fm(riskPct,1)+'% — قريبة من الحد']);
+  const badRR=M.rows.filter(r=>{const c=rowCalc(m,r);return c&&!c.closed&&c.rr<2;}).length;
+  if(badRR)w.push(['a','⚠ '+badRR+' صفقة نشطة بـ R/R أقل من 2:1']);
+  if(!w.length&&t.n)w.push(['g','✓ المحفظة ضمن قواعد إدارة المخاطر']);
+  $('warns-'+m).innerHTML=w.map(x=>`<span class="warn ${x[0]}">${x[1]}</span>`).join('');
+  dash();renderInv();
+}
+function setCfg(m,k,v){S.m[m][k]=+v||0;S.m[m].rows.forEach((_,i)=>patchRow(m,i));patchSummary(m);persist();}
+function setCell(m,i,k,v){
+  S.m[m].rows[i][k]= k==='sym'? v : (v===''?'':+v);
+  patchRow(m,i);patchSummary(m);persist();
+  if(k!=='sym'&&i===S.m[m].rows.length-1){const r=S.m[m].rows[i];
+    if(r.buy&&r.tgt&&r.stop){S.m[m].rows.push({sym:'',buy:'',tgt:'',stop:'',exit:''});
+      $('tbl-'+m).querySelector('tbody').insertAdjacentHTML('beforeend',rowHTML(m,S.m[m].rows.length-1,S.m[m].rows[S.m[m].rows.length-1],m!=='sau'));}}
+}
+function addRow(m){S.m[m].rows.push({sym:'',buy:'',tgt:'',stop:'',exit:''});
+  $('tbl-'+m).querySelector('tbody').insertAdjacentHTML('beforeend',rowHTML(m,S.m[m].rows.length-1,S.m[m].rows[S.m[m].rows.length-1],m!=='sau'));persist();}
+function delRow(m,i){S.m[m].rows.splice(i,1);buildMarket(m);persist();}
+
+/* ================== DASHBOARD ================== */
+const COLORS={sau:'#2fbf8f',egy:'#c9a85c',usa:'#5b8def'};
+function dash(){
+  const T={};let navSAR=0,trades=0;
+  for(const m in MK){T[m]=mTotals(m);navSAR+=MK[m].toSAR(T[m].cap);trades+=T[m].n;}
+  const profSAR=Object.keys(MK).reduce((s,m)=>s+MK[m].toSAR(T[m].profit),0);
+  const lossSAR=Object.keys(MK).reduce((s,m)=>s+MK[m].toSAR(T[m].loss),0);
+  const realSAR=realizedSAR();
+  const wins=winTrades();
+  const purTot=wins.reduce((s,w)=>s+w.pur,0);
+  const purDue=wins.filter(w=>!w.r.pur).reduce((s,w)=>s+w.pur,0);
+  $('dashStrip').innerHTML=`
+    <div class="st"><div class="l">إجمالي رأس المال</div><div class="v gold pv">${fm(navSAR,0)} <small>ر.س</small></div></div>
+    <div class="st"><div class="l">≈ بالدولار</div><div class="v pv">${fm(navSAR/S.fx.usd,0)} <small>$</small></div></div>
+    <div class="st"><div class="l">الصفقات النشطة</div><div class="v">${trades}</div></div>
+    <div class="st"><div class="l">الربح المتوقع</div><div class="v up pv">${fm(profSAR,0)} <small>ر.س · ${pc(navSAR?profSAR/navSAR*100:0)}</small></div></div>
+    <div class="st"><div class="l">الخسارة القصوى</div><div class="v dn pv">${fm(lossSAR,0)} <small>ر.س · ${pc(navSAR?lossSAR/navSAR*100:0)}</small></div></div>
+    <div class="st"><div class="l">النتيجة المحققة</div><div class="v pv ${realSAR>=0?'up':'dn'}">${fm(realSAR,0)} <small>ر.س</small></div></div>
+    <div class="st"><div class="l">تطهير مستحق</div><div class="v amb pv">${fm(purDue,0)} <small>ر.س</small></div></div>`;
+  $('dashTbl').innerHTML=`<thead><tr><th style="text-align:right">السوق</th><th>العملة</th><th>رأس المال</th>
+    <th>مكافئ بالريال</th><th>النشطة</th><th>الربح المتوقع</th><th>الخسارة القصوى</th><th>المحقق</th></tr></thead><tbody>`+
+    Object.keys(MK).map(m=>{const K=MK[m],t=T[m];return `<tr>
+      <td>${K.flag} ${K.name}</td><td class="mini">${K.cur}</td>
+      <td class="num pv">${fm(t.cap,0)}</td><td class="num pv">${fm(K.toSAR(t.cap),0)}</td>
+      <td>${t.n}</td><td class="num up pv">${fm(t.profit,0)}</td><td class="num dn pv">${fm(t.loss,0)}</td>
+      <td class="num pv ${t.realized>=0?'up':'dn'}">${fm(t.realized,0)}</td></tr>`;}).join('')+
+    `<tr class="tot"><td>الإجمالي بالريال</td><td></td><td></td><td class="num pv gold">${fm(navSAR,0)}</td>
+     <td>${trades}</td><td class="num up pv">${fm(profSAR,0)}</td><td class="num dn pv">${fm(lossSAR,0)}</td>
+     <td class="num pv ${realSAR>=0?'up':'dn'}">${fm(realSAR,0)}</td></tr></tbody>`;
+  let bars='',leg='';
+  for(const m in MK){const v=MK[m].toSAR(T[m].cap),p=navSAR?v/navSAR*100:0;
+    bars+=`<i style="width:${p}%;background:${COLORS[m]}"></i>`;
+    leg+=`<span><i style="background:${COLORS[m]}"></i>${MK[m].flag} ${pc(p,0)}</span>`;}
+  $('allocBar').innerHTML=bars;$('allocLegend').innerHTML=leg;
+  $('dashWarns').innerHTML=Object.keys(MK).map(m=>{
+    const t=T[m],rp=Math.abs(t.lossPct);
+    const st= !t.n&&!t.nc?['','لا صفقات'] : t.used>t.cap?['r','⛔ تجاوز رأس المال']
+      : rp>6?['r','⛔ مخاطرة عالية '+fm(rp,1)+'%'] : rp>4.5?['a','⚠ '+fm(rp,1)+'% قريبة من الحد']
+      : ['g','✓ ضمن الحدود · مخاطرة '+fm(rp,1)+'%'];
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px">
+      <span>${MK[m].flag} ${MK[m].name}</span>${st[0]?`<span class="warn ${st[0]}">${st[1]}</span>`:`<span class="mini" style="color:var(--dim)">${st[1]}</span>`}</div>`;
+  }).join('');
+  $('fxTbl').innerHTML=`
+    <tr><td>1 دولار أمريكي</td><td class="num">= ${fm(S.fx.usd,4)}</td><td class="mini">ريال (ربط ثابت)</td></tr>
+    <tr><td>1 ريال سعودي</td><td class="num">= ${fm(S.fx.egp,4)}</td><td class="mini">جنيه مصري</td></tr>
+    <tr><td>1 ريال سعودي</td><td class="num">= ${fm(1/S.fx.usd,4)}</td><td class="mini">دولار (محسوب)</td></tr>`;
+  $('dashPurif').innerHTML= wins.length?
+    `<div style="font-size:12px;line-height:2">أرباح الصفقات الرابحة: <b class="up pv">${fm(wins.reduce((s,w)=>s+w.sar,0),0)} ر.س</b><br>
+     إجمالي التطهير (${S.pur}%): <b class="gold pv">${fm(purTot,0)} ر.س</b><br>
+     المتبقي غير المُخرَج: <b class="amb pv">${fm(purDue,0)} ر.س</b></div>
+     <div class="mini" style="margin-top:6px">تفاصيل الإخراج في تبويب «المستثمرون»</div>`
+    :'<div class="mini" style="color:var(--dim)">لا أرباح محققة بعد — يُحسب تلقائياً عند تعبئة سعر الخروج بربح.</div>';
+}
+
+/* ================== INVESTORS ================== */
+function ensureInvTail(){
+  const e=p=>!p.name&&!p.amt;
+  while(S.inv.length>1&&e(S.inv[S.inv.length-1])&&e(S.inv[S.inv.length-2]))S.inv.pop();
+  if(!S.inv.length||!e(S.inv[S.inv.length-1]))S.inv.push({name:'',amt:''});
+}
+function renderInv(){
+  const pg=$('pg-inv');if(!pg)return;
+  ensureInvTail();
+  const cap=totalCapSAR();
+  const wins=winTrades();
+  const purTot=wins.reduce((s,w)=>s+w.pur,0);
+  const purDue=wins.filter(w=>!w.r.pur).reduce((s,w)=>s+w.pur,0);
+  const realSAR=realizedSAR();
+  const net=realSAR-purTot;
+  const sumInv=S.inv.reduce((s,p)=>s+(+p.amt||0),0);
+  const diff=cap-sumInv;
+  pg.innerHTML=`
+  <div class="strip">
+    <div class="st"><div class="l">رأس المال المستثمر (الأسواق الثلاثة)</div><div class="v gold pv">${fm(cap,0)} <small>ر.س</small></div></div>
+    <div class="st"><div class="l">مجموع حصص المستثمرين</div><div class="v pv ${Math.abs(diff)>1?'amb':''}">${fm(sumInv,0)} <small>ر.س</small></div></div>
+    <div class="st"><div class="l">النتيجة المحققة</div><div class="v pv ${realSAR>=0?'up':'dn'}">${fm(realSAR,0)} <small>ر.س</small></div></div>
+    <div class="st"><div class="l">التطهير (${S.pur}%)</div><div class="v gold pv">${fm(purTot,0)} <small>ر.س</small></div></div>
+    <div class="st"><div class="l">الصافي للتوزيع</div><div class="v pv ${net>=0?'up':'dn'}">${fm(net,0)} <small>ر.س</small></div></div>
+  </div>
+  ${purDue>0?`<div class="alert a">⚠ <span>مبلغ التطهير المستحق = <b class="pv">${fm(purDue,0)} ر.س</b> (${S.pur}% من الأرباح فقط) — علّم ✓ على الصفقات بعد إخراجه.</span></div>`:
+    wins.length?`<div class="alert g">✓ تم إخراج التطهير لجميع الأرباح المحققة.</div>`:''}
+  <div class="panel">
+    <div class="phead">المستثمرون <small>النسبة تُحسب تلقائياً من رأس المال المستثمر في الأسواق الثلاثة</small></div>
+    <div class="gridwrap"><table class="invtbl">
+      <thead><tr><th class="idx">#</th><th style="min-width:160px">الاسم</th><th>المبلغ (ر.س)</th>
+      <th>النسبة من رأس المال</th><th>حصته من صافي الربح</th><th></th></tr></thead>
+      <tbody>${S.inv.map((p,i)=>{
+        const a=+p.amt||0,w=cap?a/cap*100:0,share=cap?net*a/cap:0;
+        return `<tr><td class="idx">${i+1}</td>
+        <td><input type="text" class="sym" value="${p.name||''}" placeholder="—" oninput="setInv(${i},'name',this.value)"></td>
+        <td><input type="number" step="any" value="${p.amt||''}" oninput="setInv(${i},'amt',this.value)"></td>
+        <td class="num ${w?'gold':''}">${a?pc(w,2):'—'}</td>
+        <td class="num pv ${share>0?'up':share<0?'dn':''}">${a&&(net||0)?fm(share,0):'—'}</td>
+        <td><button class="del" onclick="delInv(${i})">✕</button></td></tr>`;}).join('')}</tbody>
+      <tfoot><tr class="tot"><td colspan="2" style="text-align:left;padding-left:10px">الإجمالي</td>
+        <td class="num pv">${fm(sumInv,0)}</td><td class="num">${pc(cap?sumInv/cap*100:0,1)}</td>
+        <td class="num pv ${net>=0?'up':'dn'}">${fm(cap?net*sumInv/cap:0,0)}</td><td></td></tr></tfoot>
+    </table></div>
+    ${Math.abs(diff)>1&&cap?`<div class="pbody" style="padding-top:0"><span class="warn a">⚠ فرق غير موزع: ${fm(diff,0)} ر.س — مجموع حصص المستثمرين لا يطابق رأس المال المستثمر</span></div>`:''}
+  </div>
+  <div class="panel">
+    <div class="phead">التطهير التلقائي <small>${S.pur}% من ربح كل صفقة رابحة — الخسائر لا تدخل في الحساب</small></div>
+    <div class="gridwrap"><table class="invtbl">
+      <thead><tr><th>السوق</th><th>الرمز</th><th>الربح المحقق</th><th>بالريال</th><th>التطهير ${S.pur}%</th><th>تم الإخراج ✓</th></tr></thead>
+      <tbody>${wins.length?wins.map(w=>`<tr>
+        <td>${MK[w.m].flag}</td><td class="sym" style="font-size:12px">${w.r.sym||'—'}</td>
+        <td class="num up pv">${fm(w.c.result,0)} <span class="mini">${MK[w.m].cur}</span></td>
+        <td class="num pv">${fm(w.sar,0)}</td>
+        <td class="num gold pv">${fm(w.pur,0)}</td>
+        <td><input type="checkbox" class="chk" ${w.r.pur?'checked':''} onchange="setPur('${w.m}',${w.i},this.checked)"></td></tr>`).join('')
+      :'<tr><td colspan="6" style="height:auto;padding:18px;color:var(--dim);font-size:12px">لا صفقات رابحة مغلقة بعد</td></tr>'}</tbody>
+    </table></div>
+  </div>`;
+}
+function setInv(i,k,v){S.inv[i][k]=k==='amt'?(v===''?'':+v):v;
+  ensureInvTail();persistInvLight();}
+let invTimer=null;
+function persistInvLight(){ // أعد رسم الأعمدة المحسوبة دون فقدان التركيز
+  clearTimeout(invTimer);invTimer=setTimeout(()=>{renderInv();},700);
+  try{localStorage.setItem(LSK,JSON.stringify(S));}catch(e){} schedulePush();}
+function delInv(i){S.inv.splice(i,1);renderInv();persist();}
+function setPur(m,i,v){S.m[m].rows[i].pur=v;dash();renderInv();persist();}
+
+/* ================== SETTINGS / NAV ================== */
+function saveFx(){S.fx.usd=+$('fxUsd').value||3.75;S.fx.egp=+$('fxEgp').value||13.3435;
+  S.pur=+$('purPct').value||5;closeModal('mFx');renderAll();persist();}
+function go(p,btn){document.querySelectorAll('section').forEach(s=>s.classList.remove('on'));
+  $('pg-'+p).classList.add('on');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  if(p==='inv')renderInv();}
+function openModal(id){if(id==='mFx'){$('fxUsd').value=S.fx.usd;$('fxEgp').value=S.fx.egp;$('purPct').value=S.pur;}
+  if(id==='mConn')$('gsUrl').value=S.gsUrl||'';$(id).classList.add('show');}
+function closeModal(id){$(id).classList.remove('show');}
+
+/* ================== GOOGLE SHEETS SYNC ================== */
+let pushTimer=null,syncing=false;
+function setDot(c,lbl){$('connDot').className='dot '+c;if(lbl)$('connLbl').textContent=lbl;}
+function schedulePush(){if(!S.gsUrl)return;clearTimeout(pushTimer);pushTimer=setTimeout(()=>push(false),1600);}
+async function push(manual){
+  if(!S.gsUrl){if(manual)alert('أدخل رابط Apps Script أولاً');return false;}
+  if(syncing)return false;syncing=true;setDot('busy','جارٍ الحفظ…');
+  let ok=false;
+  try{
+    const r=await fetch(S.gsUrl,{method:'POST',body:JSON.stringify({action:'save',data:S})});
+    const j=await r.json();
+    if(j.ok){ok=true;setDot('ok','متصل ✓ '+new Date().toLocaleTimeString('ar-SA-u-nu-latn',{hour:'2-digit',minute:'2-digit'}));
+      $('syncInfo').textContent='متصل — آخر حفظ: '+new Date().toLocaleString('ar-SA-u-nu-latn');}
+    else throw 0;
+  }catch(e){setDot('err','فشل الحفظ');if(manual)alert('تعذر الاتصال — تأكد من الرابط ومن النشر بصلاحية Anyone');}
+  syncing=false;return ok;
+}
+async function pull(manual){
+  if(!S.gsUrl)return false;setDot('busy','جارٍ السحب…');
+  let ok=false;
+  try{
+    const r=await fetch(S.gsUrl+'?action=load&t='+Date.now());
+    const j=await r.json();
+    if(j.ok){ok=true;
+      if(j.data&&j.data.m){const url=S.gsUrl;S=Object.assign(structuredClone(DEF),j.data);S.gsUrl=url;
+        if(!S.inv)S.inv=[];
+        try{localStorage.setItem(LSK,JSON.stringify(S));}catch(e){}
+        renderAll();}
+      setDot('ok','متصل ✓');
+      $('syncInfo').textContent='متصل — تم سحب البيانات من الشيت.';
+      if(manual)closeModal('mConn');
+    }else throw 0;
+  }catch(e){setDot('err','فشل الاتصال');if(manual)alert('تعذر السحب — تأكد من الرابط');}
+  return ok;
+}
+async function saveConn(){
+  const url=$('gsUrl').value.trim();
+  S.gsUrl=url;
+  try{localStorage.setItem(LSK,JSON.stringify(S));}catch(e){}
+  if(!url){setDot('','حفظ الاتصال');$('syncInfo').textContent='غير متصل — أدخل رابط Apps Script أولاً.';return;}
+  if(!url.startsWith('https://script.google.com/')||!url.includes('/exec')){
+    $('syncInfo').textContent='⚠ الرابط غير صحيح — يجب أن يبدأ بـ https://script.google.com وينتهي بـ /exec (رابط النشر وليس رابط المحرر).';
+    alert('الرابط غير صحيح.\nانسخ رابط Web app الذي ينتهي بـ /exec من صفحة Deploy.');return;}
+  $('syncInfo').textContent='⏳ جارٍ اختبار الاتصال…';
+  const okPull=await pull(false);
+  if(!okPull){
+    $('syncInfo').textContent='✕ فشل الاتصال — تأكد من: ١) نشر التطبيق Deploy → Web app، ٢) Who has access = Anyone، ٣) نسخ رابط /exec الجديد بعد كل نشر.';
+    alert('تعذر الاتصال بالشيت.\n\nالأسباب الشائعة:\n• لم يتم النشر كـ Web app\n• الصلاحية ليست Anyone\n• الرابط قديم — كل Deploy جديد يولّد رابطاً جديداً');return;}
+  const okPush=await push(false);
+  if(!okPush){$('syncInfo').textContent='✕ القراءة نجحت لكن الحفظ فشل — تأكد من صلاحية Anyone.';return;}
+  $('syncInfo').textContent='✓ متصل — الحفظ التلقائي مفعّل.';
+  alert('تم الربط بنجاح ✓');closeModal('mConn');
+}
+
+/* ================== INIT ================== */
+function renderAll(){['sau','egy','usa'].forEach(buildMarket);dash();renderInv();}
+renderAll();
+if(S.gsUrl){setDot('busy','جارٍ الاتصال…');pull(false);}
+</script>
+</body>
+</html>
